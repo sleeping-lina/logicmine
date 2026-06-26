@@ -2,12 +2,12 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LOGICMINE — 論理マインスイーパー</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>LOGICMINE</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap');
 
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 
   :root {
     --bg: #0d1117;
@@ -24,50 +24,68 @@
     --cell-closed: #1f2937;
     --cell-open: #0d1117;
     --cell-hover: #253048;
-    --shadow: 0 8px 32px rgba(0,0,0,0.6);
     --radius: 6px;
     --num1: #58a6ff; --num2: #3fb950; --num3: #f85149;
     --num4: #8b5cf6; --num5: #f97316; --num6: #06b6d4;
     --num7: #ec4899; --num8: #a3a3a3;
+    --header-h: 64px;
+    --footer-h: 60px;
+  }
+
+  html, body {
+    height: 100%;
+    overflow: hidden;
   }
 
   body {
     background: var(--bg);
     color: var(--text);
     font-family: 'Inter', sans-serif;
-    min-height: 100vh;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    padding: 24px 16px 48px;
-    user-select: none;
   }
 
-  /* Header */
+  /* ============ Fixed Header ============ */
   header {
-    width: 100%;
-    max-width: 900px;
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: var(--header-h);
+    background: rgba(13,17,23,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 28px;
-    padding-bottom: 20px;
-    border-bottom: 1px solid var(--border);
+    padding: 0 14px;
+    padding-top: env(safe-area-inset-top);
+    height: calc(var(--header-h) + env(safe-area-inset-top));
+    z-index: 100;
   }
 
   .logo {
     font-family: 'JetBrains Mono', monospace;
     font-weight: 700;
-    font-size: 22px;
+    font-size: 17px;
     letter-spacing: -0.5px;
     color: var(--text);
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
   }
-
   .logo span { color: var(--accent); }
+  .version {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-weight: 600;
+    letter-spacing: 0;
+  }
 
   .status-bar {
     display: flex;
-    gap: 24px;
+    gap: 14px;
     align-items: center;
   }
 
@@ -75,87 +93,75 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
+    gap: 1px;
+    min-width: 44px;
   }
-
   .stat-label {
-    font-size: 10px;
-    font-weight: 500;
-    letter-spacing: 1.5px;
+    font-size: 8px;
+    font-weight: 600;
+    letter-spacing: 1px;
     text-transform: uppercase;
     color: var(--text-muted);
   }
-
   .stat-value {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 20px;
+    font-size: 17px;
     font-weight: 600;
     color: var(--text);
-    min-width: 40px;
-    text-align: center;
   }
-
   .stat-value.danger { color: var(--danger); }
   .stat-value.success { color: var(--accent2); }
+  .stat.time-hidden { display: none; }
 
-  /* Controls */
-  .controls {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    flex-wrap: wrap;
-    justify-content: center;
-    margin-bottom: 24px;
-  }
-
-  .btn {
+  .icon-btn {
+    width: 38px; height: 38px;
+    border-radius: 9px;
     background: var(--surface2);
     border: 1px solid var(--border);
     color: var(--text);
-    font-family: 'Inter', sans-serif;
-    font-size: 13px;
-    font-weight: 500;
-    padding: 8px 16px;
-    border-radius: var(--radius);
-    cursor: pointer;
-    transition: all 0.15s ease;
-    letter-spacing: 0.2px;
-  }
-
-  .btn:hover { background: var(--cell-hover); border-color: var(--accent); color: var(--accent); }
-  .btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
-
-  .btn-danger:hover { border-color: var(--danger); color: var(--danger); }
-  .btn-danger.active { background: var(--danger); border-color: var(--danger); color: #fff; }
-
-  .sep { width: 1px; height: 28px; background: var(--border); }
-
-  .mode-indicator {
+    font-size: 18px;
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 14px;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    font-size: 13px;
-    font-weight: 500;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .icon-btn:active { transform: scale(0.92); background: var(--cell-hover); }
+
+  /* ============ Progress ============ */
+  .progress-wrap {
+    position: fixed;
+    top: calc(var(--header-h) + env(safe-area-inset-top));
+    left: 0; right: 0;
+    height: 3px;
+    background: var(--border);
+    z-index: 99;
+  }
+  #progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    transition: width 0.3s ease;
+    width: 0%;
   }
 
-  .mode-dot {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: var(--accent);
-    transition: background 0.2s;
+  /* ============ Scrollable Board Area ============ */
+  .board-scroll {
+    position: absolute;
+    top: calc(var(--header-h) + env(safe-area-inset-top) + 3px);
+    bottom: calc(var(--footer-h) + env(safe-area-inset-bottom));
+    left: 0; right: 0;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: 16px;
   }
 
-  .mode-indicator.flag-mode .mode-dot { background: var(--warn); }
-  .mode-indicator.flag-mode { border-color: var(--warn); color: var(--warn); }
-
-  /* Board */
   .board-wrap {
     position: relative;
-    display: inline-block;
+    margin: auto;
   }
 
   #board {
@@ -164,313 +170,438 @@
     background: var(--bg);
     border: 1px solid var(--border);
     border-radius: 10px;
-    padding: 10px;
-    box-shadow: var(--shadow);
-    transition: opacity 0.3s;
+    padding: 8px;
   }
 
-  /* Cells */
+  /* ============ Cells ============ */
   .cell {
-    width: 36px;
-    height: 36px;
     border-radius: 4px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-family: 'JetBrains Mono', monospace;
-    font-size: 14px;
     font-weight: 700;
     cursor: pointer;
     position: relative;
-    transition: background 0.12s, transform 0.08s, box-shadow 0.12s;
+    transition: background 0.12s, transform 0.08s;
     border: 1px solid transparent;
   }
-
   .cell.closed {
     background: var(--cell-closed);
     border-color: #2d3748;
-    box-shadow: 0 1px 0 rgba(255,255,255,0.05) inset, 0 1px 2px rgba(0,0,0,0.3);
+    box-shadow: 0 1px 0 rgba(255,255,255,0.04) inset;
   }
-
-  .cell.closed:hover {
+  .cell.closed:active {
     background: var(--cell-hover);
-    border-color: var(--accent);
-    transform: scale(1.05);
-    box-shadow: 0 0 8px rgba(88,166,255,0.2);
-    z-index: 1;
+    transform: scale(0.94);
   }
-
   .cell.open {
     background: var(--cell-open);
     border-color: #1c2333;
     cursor: default;
   }
-
   .cell.flagged {
     background: rgba(210,153,34,0.12);
     border-color: var(--warn);
-    color: var(--warn);
   }
-
-  .cell.flagged:hover {
-    background: rgba(210,153,34,0.2);
-    transform: scale(1.05);
-    z-index: 1;
-  }
-
   .cell.mine-hit {
-    background: rgba(248,81,73,0.25);
+    background: rgba(248,81,73,0.3);
     border-color: var(--danger);
     animation: shake 0.4s ease;
   }
-
   .cell.mine-revealed {
-    background: rgba(248,81,73,0.1);
+    background: rgba(248,81,73,0.08);
     border-color: #2d1b1b;
-    color: var(--danger);
   }
-
   .cell.hint {
     animation: hint-pulse 1s ease 2;
   }
 
   @keyframes hint-pulse {
     0%, 100% { box-shadow: none; }
-    50% { box-shadow: 0 0 12px rgba(88,166,255,0.6), 0 0 0 2px var(--accent); border-color: var(--accent); }
+    50% { box-shadow: 0 0 12px rgba(88,166,255,0.7), 0 0 0 2px var(--accent); }
   }
-
   @keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    20% { transform: translateX(-4px); }
-    40% { transform: translateX(4px); }
-    60% { transform: translateX(-3px); }
-    80% { transform: translateX(3px); }
+    0%,100% { transform: translateX(0); }
+    25% { transform: translateX(-3px); }
+    75% { transform: translateX(3px); }
   }
-
-  /* Ripple open animation */
-  .cell.opening {
-    animation: cell-open 0.25s ease forwards;
-  }
-
+  .cell.opening { animation: cell-open 0.22s ease; }
   @keyframes cell-open {
-    0% { transform: scale(1); background: var(--cell-hover); }
-    50% { transform: scale(0.9); }
+    0% { transform: scale(0.85); }
     100% { transform: scale(1); }
   }
 
-  /* Number colors */
-  .n1 { color: var(--num1); }
-  .n2 { color: var(--num2); }
-  .n3 { color: var(--num3); }
-  .n4 { color: var(--num4); }
-  .n5 { color: var(--num5); }
-  .n6 { color: var(--num6); }
-  .n7 { color: var(--num7); }
-  .n8 { color: var(--num8); }
+  .n1{color:var(--num1)} .n2{color:var(--num2)} .n3{color:var(--num3)}
+  .n4{color:var(--num4)} .n5{color:var(--num5)} .n6{color:var(--num6)}
+  .n7{color:var(--num7)} .n8{color:var(--num8)}
 
-  /* Overlay */
-  .overlay {
-    display: none;
-    position: absolute;
-    inset: 0;
-    border-radius: 10px;
+  /* ============ Fixed Footer ============ */
+  footer {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: var(--footer-h);
+    height: calc(var(--footer-h) + env(safe-area-inset-bottom));
+    padding-bottom: env(safe-area-inset-bottom);
+    background: rgba(13,17,23,0.92);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid var(--border);
+    display: flex;
     align-items: center;
     justify-content: center;
-    flex-direction: column;
-    gap: 16px;
-    z-index: 10;
-    backdrop-filter: blur(6px);
+    gap: 8px;
+    padding-left: 10px;
+    padding-right: 10px;
+    z-index: 100;
   }
 
+  .fbtn {
+    flex: 1;
+    max-width: 150px;
+    height: 42px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+  }
+  .fbtn:active { transform: scale(0.96); }
+  .fbtn.flag-active {
+    background: var(--warn);
+    border-color: var(--warn);
+    color: #1a1a1a;
+  }
+
+  /* ============ Settings Panel ============ */
+  .settings-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  .settings-overlay.show { opacity: 1; pointer-events: auto; }
+
+  .settings-panel {
+    position: fixed;
+    top: 0; right: 0;
+    width: min(340px, 88vw);
+    height: 100%;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    z-index: 201;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.4,0,0.2,1);
+    display: flex;
+    flex-direction: column;
+    padding-top: env(safe-area-inset-top);
+    overflow-y: auto;
+  }
+  .settings-panel.show { transform: translateX(0); }
+
+  .settings-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .settings-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 18px;
+    font-weight: 700;
+  }
+
+  .settings-section {
+    padding: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 14px;
+  }
+
+  .theme-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .theme-card {
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    text-align: center;
+  }
+  .theme-card:active { transform: scale(0.96); }
+  .theme-card.selected {
+    border-color: var(--accent);
+    background: rgba(88,166,255,0.1);
+  }
+  .theme-emoji { font-size: 26px; }
+  .theme-name { font-size: 12px; font-weight: 600; }
+  .theme-desc { font-size: 10px; color: var(--text-muted); line-height: 1.3; }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .toggle-info { display: flex; flex-direction: column; gap: 2px; }
+  .toggle-name { font-size: 14px; font-weight: 500; }
+  .toggle-sub { font-size: 11px; color: var(--text-muted); }
+
+  .toggle {
+    width: 50px; height: 30px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+  .toggle.on { background: var(--accent2); border-color: var(--accent2); }
+  .toggle::after {
+    content: '';
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 22px; height: 22px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.2s;
+  }
+  .toggle.on::after { transform: translateX(20px); }
+
+  .diff-row {
+    display: flex;
+    gap: 8px;
+  }
+  .diff-opt {
+    flex: 1;
+    padding: 12px 6px;
+    background: var(--surface2);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .diff-opt:active { transform: scale(0.96); }
+  .diff-opt.selected { border-color: var(--accent); background: rgba(88,166,255,0.1); }
+  .diff-name { font-size: 13px; font-weight: 600; }
+  .diff-meta { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+
+  .pause-note {
+    text-align: center;
+    font-size: 11px;
+    color: var(--warn);
+    padding: 12px;
+  }
+
+  /* ============ Game Over Overlay ============ */
+  .overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(13,17,23,0.85);
+    backdrop-filter: blur(8px);
+    z-index: 150;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    padding: 20px;
+  }
   .overlay.show { display: flex; }
-
-  .overlay-win { background: rgba(13,17,23,0.88); }
-  .overlay-lose { background: rgba(13,17,23,0.88); }
-
+  .overlay-emoji { font-size: 56px; }
   .overlay-title {
     font-family: 'JetBrains Mono', monospace;
-    font-size: 28px;
+    font-size: 26px;
     font-weight: 700;
-    letter-spacing: -0.5px;
   }
-
   .overlay-win .overlay-title { color: var(--accent2); }
   .overlay-lose .overlay-title { color: var(--danger); }
-
   .overlay-sub {
     font-size: 14px;
     color: var(--text-dim);
     text-align: center;
-    line-height: 1.5;
+    line-height: 1.6;
   }
-
-  .overlay .btn { font-size: 14px; padding: 10px 24px; }
-
-  /* Difficulty dots */
-  .diff-btn {
-    position: relative;
-  }
-
-  .diff-btn::after {
-    content: attr(data-mines);
-    position: absolute;
-    top: -8px;
-    right: -6px;
-    font-size: 10px;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 1px 5px;
-    color: var(--text-muted);
-    font-family: 'JetBrains Mono', monospace;
+  .overlay-btn {
+    margin-top: 8px;
+    padding: 14px 36px;
+    background: var(--accent);
+    border: none;
+    color: #fff;
+    font-size: 15px;
     font-weight: 600;
+    border-radius: 12px;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
   }
-
-  /* Info bar */
-  .info-bar {
-    margin-top: 20px;
-    display: flex;
-    gap: 20px;
-    align-items: center;
-    font-size: 12px;
-    color: var(--text-muted);
-  }
-
-  .info-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  kbd {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: var(--surface2);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 2px 7px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    color: var(--text);
-    min-width: 28px;
-  }
-
-  /* Timer */
-  #timer {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 20px;
-    font-weight: 600;
-    color: var(--text);
-    min-width: 54px;
-    text-align: center;
-  }
-
-  /* Progress bar */
-  .progress-wrap {
-    width: 100%;
-    max-width: 900px;
-    height: 3px;
-    background: var(--border);
-    border-radius: 2px;
-    margin-bottom: 20px;
-    overflow: hidden;
-  }
-
-  #progress-bar {
-    height: 100%;
-    background: linear-gradient(90deg, var(--accent), var(--accent2));
-    border-radius: 2px;
-    transition: width 0.3s ease;
-    width: 0%;
-  }
-
-  /* Chord highlight */
-  .cell.chord-ready {
-    box-shadow: 0 0 0 2px var(--accent2);
-  }
+  .overlay-btn:active { transform: scale(0.96); }
 </style>
 </head>
 <body>
 
 <header>
-  <div class="logo">LOGIC<span>MINE</span></div>
+  <div class="logo">LOGIC<span>MINE</span><span class="version" id="version">v1</span></div>
   <div class="status-bar">
     <div class="stat">
-      <div class="stat-label">Mines</div>
+      <div class="stat-label" id="mine-label">Mines</div>
       <div class="stat-value danger" id="mine-count">—</div>
     </div>
-    <div class="stat">
+    <div class="stat" id="time-stat">
       <div class="stat-label">Time</div>
-      <div id="timer">0:00</div>
-    </div>
-    <div class="stat">
-      <div class="stat-label">Open</div>
-      <div class="stat-value success" id="open-count">0</div>
+      <div class="stat-value" id="timer">0:00</div>
     </div>
   </div>
+  <div class="icon-btn" id="settings-btn">⚙️</div>
 </header>
 
 <div class="progress-wrap"><div id="progress-bar"></div></div>
 
-<div class="controls">
-  <button class="btn diff-btn active" id="d-easy" data-mines="10" onclick="setDifficulty('easy')">Easy 9×9</button>
-  <button class="btn diff-btn" id="d-medium" data-mines="40" onclick="setDifficulty('medium')">Medium 16×16</button>
-  <button class="btn diff-btn" id="d-hard" data-mines="99" onclick="setDifficulty('hard')">Hard 30×16</button>
-  <div class="sep"></div>
-  <div class="mode-indicator" id="mode-indicator">
-    <div class="mode-dot"></div>
-    <span id="mode-text">Open mode</span>
-  </div>
-  <button class="btn" onclick="toggleFlag()" title="F key">🚩 Flag (F)</button>
-  <div class="sep"></div>
-  <button class="btn" onclick="getHint()" title="H key">💡 Hint (H)</button>
-  <button class="btn btn-danger" onclick="newGame()">↺ New</button>
-</div>
-
-<div class="board-wrap">
-  <div id="board"></div>
-  <div class="overlay overlay-win" id="overlay-win">
-    <div class="overlay-title">🎉 クリア！</div>
-    <div class="overlay-sub" id="win-msg"></div>
-    <button class="btn" onclick="newGame()">もう一度</button>
-  </div>
-  <div class="overlay overlay-lose" id="overlay-lose">
-    <div class="overlay-title">💥 爆発</div>
-    <div class="overlay-sub">でも大丈夫。このパズルは論理で解けます。</div>
-    <button class="btn" onclick="newGame()">再挑戦</button>
+<div class="board-scroll" id="board-scroll">
+  <div class="board-wrap">
+    <div id="board"></div>
   </div>
 </div>
 
-<div class="info-bar">
-  <div class="info-item"><kbd>Click</kbd> セルを開く</div>
-  <div class="info-item"><kbd>Right</kbd> フラグ</div>
-  <div class="info-item"><kbd>F</kbd> フラグ切替</div>
-  <div class="info-item"><kbd>H</kbd> ヒント</div>
-  <div class="info-item"><kbd>Middle</kbd> コード（自動展開）</div>
+<footer>
+  <button class="fbtn" id="flag-btn">🚩 <span id="flag-label">フラグ</span></button>
+  <button class="fbtn" id="hint-btn">💡 ヒント</button>
+  <button class="fbtn" id="new-btn">↺ 新規</button>
+</footer>
+
+<!-- Settings -->
+<div class="settings-overlay" id="settings-overlay"></div>
+<div class="settings-panel" id="settings-panel">
+  <div class="settings-header">
+    <div class="settings-title">設定</div>
+    <div class="icon-btn" id="close-settings">✕</div>
+  </div>
+
+  <div class="settings-section">
+    <div class="section-label">テーマ</div>
+    <div class="theme-grid" id="theme-grid"></div>
+  </div>
+
+  <div class="settings-section">
+    <div class="section-label">難易度</div>
+    <div class="diff-row" id="diff-row">
+      <div class="diff-opt" data-diff="easy"><div class="diff-name">Easy</div><div class="diff-meta">9×9 · 10</div></div>
+      <div class="diff-opt" data-diff="medium"><div class="diff-name">Medium</div><div class="diff-meta">16×16 · 40</div></div>
+      <div class="diff-opt" data-diff="hard"><div class="diff-name">Hard</div><div class="diff-meta">30×16 · 99</div></div>
+    </div>
+  </div>
+
+  <div class="settings-section">
+    <div class="section-label">表示</div>
+    <div class="toggle-row">
+      <div class="toggle-info">
+        <div class="toggle-name">タイマー</div>
+        <div class="toggle-sub">経過時間を表示</div>
+      </div>
+      <div class="toggle" id="timer-toggle"></div>
+    </div>
+  </div>
+
+  <div class="pause-note" id="pause-note">⏸ ゲームは一時停止中です</div>
+</div>
+
+<!-- Game Over -->
+<div class="overlay overlay-win" id="overlay-win">
+  <div class="overlay-emoji" id="win-emoji">🎉</div>
+  <div class="overlay-title">クリア！</div>
+  <div class="overlay-sub" id="win-msg"></div>
+  <button class="overlay-btn" id="win-btn">もう一度</button>
+</div>
+<div class="overlay overlay-lose" id="overlay-lose">
+  <div class="overlay-emoji" id="lose-emoji">💥</div>
+  <div class="overlay-title">ゲームオーバー</div>
+  <div class="overlay-sub">このパズルは論理だけで解けます。<br>もう一度挑戦してみましょう。</div>
+  <button class="overlay-btn" id="lose-btn">再挑戦</button>
 </div>
 
 <script>
-// ===================== Game State =====================
-const CONFIGS = {
-  easy:   { rows: 9,  cols: 9,  mines: 10 },
-  medium: { rows: 16, cols: 16, mines: 40 },
-  hard:   { rows: 16, cols: 30, mines: 99 },
+// ============ Themes ============
+const THEMES = {
+  classic: {
+    name: 'クラシック', emoji: '💣', desc: '地雷と旗',
+    danger: '💣', flag: '🚩', win: '🎉', lose: '💥',
+    mineLabel: 'Mines'
+  },
+  mushroom: {
+    name: '毒キノコ', emoji: '🍄', desc: '森のキノコ狩り',
+    danger: '🍄', flag: '🪧', win: '🧺', lose: '☠️',
+    mineLabel: 'Toxic'
+  },
+  space: {
+    name: '宇宙', emoji: '🪐', desc: 'ブラックホール探索',
+    danger: '🕳️', flag: '📡', win: '🚀', lose: '🌌',
+    mineLabel: 'Holes'
+  },
+  ruins: {
+    name: '遺跡', emoji: '🏺', desc: '罠を避けて発掘',
+    danger: '⚙️', flag: '🚧', win: '🏺', lose: '💀',
+    mineLabel: 'Traps'
+  },
+  candy: {
+    name: 'お菓子', emoji: '🍬', desc: '魔女の家',
+    danger: '💀', flag: '🍭', win: '🍰', lose: '🧙',
+    mineLabel: 'Poison'
+  },
 };
 
-let cfg, grid, revealed, flagged, gameState, firstClick, timerInt, elapsedSecs, flagMode;
-let currentDiff = 'easy';
+const CONFIGS = {
+  easy:   { rows: 9,  cols: 9,  mines: 10, cell: 40 },
+  medium: { rows: 16, cols: 16, mines: 40, cell: 34 },
+  hard:   { rows: 16, cols: 30, mines: 99, cell: 32 },
+};
 
-function init(diff) {
-  currentDiff = diff;
-  cfg = { ...CONFIGS[diff] };
-  grid = [];
-  revealed = [];
-  flagged = [];
-  gameState = 'idle'; // idle | playing | won | lost
-  firstClick = true;
-  elapsedSecs = 0;
-  flagMode = false;
+// ============ Settings (persisted) ============
+let settings = loadSettings();
+
+function loadSettings() {
+  try {
+    const s = JSON.parse(localStorage.getItem('logicmine-settings'));
+    if (s) return { theme: s.theme||'classic', diff: s.diff||'easy', showTimer: s.showTimer!==false };
+  } catch(e){}
+  return { theme: 'classic', diff: 'easy', showTimer: true };
+}
+function saveSettings() {
+  try { localStorage.setItem('logicmine-settings', JSON.stringify(settings)); } catch(e){}
+}
+
+// ============ State ============
+let cfg, grid, revealed, flagged, gameState, firstClick, timerInt, elapsedSecs, flagMode, paused, pausedAt;
+
+function init() {
+  cfg = { ...CONFIGS[settings.diff] };
+  grid = []; revealed = []; flagged = [];
+  gameState = 'idle'; firstClick = true; elapsedSecs = 0; flagMode = false; paused = false;
   clearInterval(timerInt);
 
   for (let r = 0; r < cfg.rows; r++) {
@@ -479,403 +610,385 @@ function init(diff) {
     flagged.push(new Array(cfg.cols).fill(false));
   }
 
+  applyTheme();
   document.getElementById('mine-count').textContent = cfg.mines;
-  document.getElementById('open-count').textContent = '0';
   document.getElementById('timer').textContent = '0:00';
   document.getElementById('progress-bar').style.width = '0%';
   document.getElementById('overlay-win').classList.remove('show');
   document.getElementById('overlay-lose').classList.remove('show');
-  updateModeUI();
+  updateFlagBtn();
+  updateTimerVisibility();
+  buildBoard();
   renderBoard();
 }
 
-// ===================== Mine Placement (solvable) =====================
-function placeMines(safeR, safeC) {
-  const safeCells = new Set();
-  for (let dr = -1; dr <= 1; dr++)
-    for (let dc = -1; dc <= 1; dc++) {
-      const nr = safeR + dr, nc = safeC + dc;
-      if (nr >= 0 && nr < cfg.rows && nc >= 0 && nc < cfg.cols)
-        safeCells.add(nr * cfg.cols + nc);
-    }
+function applyTheme() {
+  const t = THEMES[settings.theme];
+  document.getElementById('mine-label').textContent = t.mineLabel;
+}
 
-  let placed = 0, attempts = 0;
-  while (placed < cfg.mines && attempts < 10000) {
-    const r = Math.floor(Math.random() * cfg.rows);
-    const c = Math.floor(Math.random() * cfg.cols);
-    if (grid[r][c] !== -1 && !safeCells.has(r * cfg.cols + c)) {
-      grid[r][c] = -1;
-      placed++;
-    }
+function updateTimerVisibility() {
+  document.getElementById('time-stat').classList.toggle('time-hidden', !settings.showTimer);
+}
+
+// ============ Mine Placement ============
+function placeMines(safeR, safeC) {
+  const safe = new Set();
+  for (let dr=-1; dr<=1; dr++) for (let dc=-1; dc<=1; dc++) {
+    const nr=safeR+dr, nc=safeC+dc;
+    if (nr>=0&&nr<cfg.rows&&nc>=0&&nc<cfg.cols) safe.add(nr*cfg.cols+nc);
+  }
+  let placed=0, attempts=0;
+  while (placed<cfg.mines && attempts<20000) {
+    const r=Math.floor(Math.random()*cfg.rows), c=Math.floor(Math.random()*cfg.cols);
+    if (grid[r][c]!==-1 && !safe.has(r*cfg.cols+c)) { grid[r][c]=-1; placed++; }
     attempts++;
   }
   calcNumbers();
 }
 
 function calcNumbers() {
-  for (let r = 0; r < cfg.rows; r++)
-    for (let c = 0; c < cfg.cols; c++) {
-      if (grid[r][c] === -1) continue;
-      let count = 0;
-      for (let dr = -1; dr <= 1; dr++)
-        for (let dc = -1; dc <= 1; dc++) {
-          const nr = r + dr, nc = c + dc;
-          if (nr >= 0 && nr < cfg.rows && nc >= 0 && nc < cfg.cols && grid[nr][nc] === -1)
-            count++;
-        }
-      grid[r][c] = count;
+  for (let r=0;r<cfg.rows;r++) for (let c=0;c<cfg.cols;c++) {
+    if (grid[r][c]===-1) continue;
+    let n=0;
+    for (let dr=-1;dr<=1;dr++) for (let dc=-1;dc<=1;dc++) {
+      const nr=r+dr,nc=c+dc;
+      if (nr>=0&&nr<cfg.rows&&nc>=0&&nc<cfg.cols&&grid[nr][nc]===-1) n++;
     }
+    grid[r][c]=n;
+  }
 }
 
-// ===================== Reveal Logic =====================
-function revealCell(r, c, animate = true) {
-  if (r < 0 || r >= cfg.rows || c < 0 || c >= cfg.cols) return;
-  if (revealed[r][c] || flagged[r][c]) return;
+// ============ Reveal ============
+function revealCell(r,c) {
+  if (r<0||r>=cfg.rows||c<0||c>=cfg.cols) return;
+  if (revealed[r][c]||flagged[r][c]) return;
 
   if (firstClick) {
-    placeMines(r, c);
-    firstClick = false;
-    gameState = 'playing';
-    startTimer();
+    placeMines(r,c); firstClick=false; gameState='playing'; startTimer();
   }
 
-  if (grid[r][c] === -1) {
-    revealed[r][c] = true;
-    gameState = 'lost';
-    stopTimer();
-    revealAllMines(r, c);
+  if (grid[r][c]===-1) {
+    revealed[r][c]=true; gameState='lost'; stopTimer();
+    document.querySelector(`[data-r="${r}"][data-c="${c}"]`)?.setAttribute('data-hit','1');
+    for (let rr=0;rr<cfg.rows;rr++) for (let cc=0;cc<cfg.cols;cc++)
+      if (grid[rr][cc]===-1) revealed[rr][cc]=true;
     renderBoard();
-    setTimeout(() => document.getElementById('overlay-lose').classList.add('show'), 600);
+    setTimeout(()=>{
+      document.getElementById('lose-emoji').textContent = THEMES[settings.theme].lose;
+      document.getElementById('overlay-lose').classList.add('show');
+    }, 700);
     return;
   }
 
-  // BFS flood fill
-  const queue = [[r, c]];
-  const visited = new Set([r * cfg.cols + c]);
-
-  while (queue.length > 0) {
-    const [cr, cc] = queue.shift();
+  const queue=[[r,c]], visited=new Set([r*cfg.cols+c]);
+  while (queue.length) {
+    const [cr,cc]=queue.shift();
     if (revealed[cr][cc]) continue;
-    revealed[cr][cc] = true;
-    if (grid[cr][cc] === 0) {
-      for (let dr = -1; dr <= 1; dr++)
-        for (let dc = -1; dc <= 1; dc++) {
-          const nr = cr + dr, nc = cc + dc;
-          const key = nr * cfg.cols + nc;
-          if (nr >= 0 && nr < cfg.rows && nc >= 0 && nc < cfg.cols
-            && !visited.has(key) && !revealed[nr][nc] && !flagged[nr][nc]) {
-            visited.add(key);
-            queue.push([nr, nc]);
-          }
+    revealed[cr][cc]=true;
+    if (grid[cr][cc]===0) {
+      for (let dr=-1;dr<=1;dr++) for (let dc=-1;dc<=1;dc++) {
+        const nr=cr+dr,nc=cc+dc,key=nr*cfg.cols+nc;
+        if (nr>=0&&nr<cfg.rows&&nc>=0&&nc<cfg.cols&&!visited.has(key)&&!revealed[nr][nc]&&!flagged[nr][nc]) {
+          visited.add(key); queue.push([nr,nc]);
         }
-    }
-  }
-
-  checkWin();
-  renderBoard(animate ? [...visited] : null);
-}
-
-function chordReveal(r, c) {
-  if (!revealed[r][c] || grid[r][c] <= 0) return;
-  let flagCount = 0;
-  const neighbors = [];
-  for (let dr = -1; dr <= 1; dr++)
-    for (let dc = -1; dc <= 1; dc++) {
-      if (dr === 0 && dc === 0) continue;
-      const nr = r + dr, nc = c + dc;
-      if (nr >= 0 && nr < cfg.rows && nc >= 0 && nc < cfg.cols) {
-        if (flagged[nr][nc]) flagCount++;
-        else neighbors.push([nr, nc]);
       }
     }
-  if (flagCount === grid[r][c]) {
-    neighbors.forEach(([nr, nc]) => revealCell(nr, nc));
   }
+  checkWin();
+  renderBoard([...visited]);
 }
 
-function revealAllMines(hitR, hitC) {
-  for (let r = 0; r < cfg.rows; r++)
-    for (let c = 0; c < cfg.cols; c++)
-      if (grid[r][c] === -1) revealed[r][c] = true;
+function chordReveal(r,c) {
+  if (!revealed[r][c]||grid[r][c]<=0) return;
+  let flags=0; const hidden=[];
+  for (let dr=-1;dr<=1;dr++) for (let dc=-1;dc<=1;dc++) {
+    if (dr===0&&dc===0) continue;
+    const nr=r+dr,nc=c+dc;
+    if (nr>=0&&nr<cfg.rows&&nc>=0&&nc<cfg.cols) {
+      if (flagged[nr][nc]) flags++; else if (!revealed[nr][nc]) hidden.push([nr,nc]);
+    }
+  }
+  if (flags===grid[r][c]) hidden.forEach(([nr,nc])=>revealCell(nr,nc));
 }
 
 function checkWin() {
-  let openCount = 0;
-  for (let r = 0; r < cfg.rows; r++)
-    for (let c = 0; c < cfg.cols; c++)
-      if (revealed[r][c] && grid[r][c] !== -1) openCount++;
-
-  const total = cfg.rows * cfg.cols - cfg.mines;
-  document.getElementById('open-count').textContent = openCount;
-  document.getElementById('progress-bar').style.width = (openCount / total * 100) + '%';
-
-  if (openCount === total) {
-    gameState = 'won';
-    stopTimer();
-    const mins = Math.floor(elapsedSecs / 60);
-    const secs = elapsedSecs % 60;
-    document.getElementById('win-msg').textContent =
-      `${cfg.rows}×${cfg.cols} / 地雷${cfg.mines}個 / ${mins}:${String(secs).padStart(2,'0')}`;
-    setTimeout(() => document.getElementById('overlay-win').classList.add('show'), 300);
+  let open=0;
+  for (let r=0;r<cfg.rows;r++) for (let c=0;c<cfg.cols;c++)
+    if (revealed[r][c]&&grid[r][c]!==-1) open++;
+  const total=cfg.rows*cfg.cols-cfg.mines;
+  document.getElementById('progress-bar').style.width=(open/total*100)+'%';
+  if (open===total) {
+    gameState='won'; stopTimer();
+    const m=Math.floor(elapsedSecs/60), s=elapsedSecs%60;
+    const timeStr = settings.showTimer ? ` · ${m}:${String(s).padStart(2,'0')}` : '';
+    document.getElementById('win-msg').textContent=`${cfg.rows}×${cfg.cols} · ${THEMES[settings.theme].name}${timeStr}`;
+    document.getElementById('win-emoji').textContent=THEMES[settings.theme].win;
+    setTimeout(()=>document.getElementById('overlay-win').classList.add('show'),300);
   }
 }
 
-// ===================== Hint System =====================
+// ============ Hint ============
 function getHint() {
-  if (gameState !== 'playing' || firstClick) return;
-
-  // Strategy 1: find a safe cell that's logically deducible
-  for (let r = 0; r < cfg.rows; r++) {
-    for (let c = 0; c < cfg.cols; c++) {
-      if (!revealed[r][c] || grid[r][c] <= 0) continue;
-      const neighbors = getNeighbors(r, c);
-      const unrev = neighbors.filter(([nr,nc]) => !revealed[nr][nc]);
-      const flags = neighbors.filter(([nr,nc]) => flagged[nr][nc]);
-      const hidden = unrev.filter(([nr,nc]) => !flagged[nr][nc]);
-
-      // All unrevealed are mines
-      if (hidden.length > 0 && flags.length + hidden.length === grid[r][c]) {
-        // Hint: these are mines → flash them
-        highlightCells(hidden, 'hint');
-        return;
-      }
-
-      // All mines accounted for → remaining safe
-      if (flags.length === grid[r][c] && hidden.length > 0) {
-        highlightCells(hidden, 'hint');
-        return;
-      }
-    }
+  if (gameState!=='playing'||firstClick||paused) return;
+  for (let r=0;r<cfg.rows;r++) for (let c=0;c<cfg.cols;c++) {
+    if (!revealed[r][c]||grid[r][c]<=0) continue;
+    const nb=getNeighbors(r,c);
+    const flags=nb.filter(([nr,nc])=>flagged[nr][nc]).length;
+    const hidden=nb.filter(([nr,nc])=>!revealed[nr][nc]&&!flagged[nr][nc]);
+    if (hidden.length>0 && flags+hidden.length===grid[r][c]) { highlight(hidden); return; }
+    if (hidden.length>0 && flags===grid[r][c]) { highlight(hidden); return; }
   }
-
-  // Strategy 2: constraint intersection
-  const safe = findSafeBySolver();
-  if (safe.length > 0) {
-    highlightCells([safe[0]], 'hint');
-    return;
-  }
-
-  // Fallback: highlight a random unrevealed non-mine
-  const candidates = [];
-  for (let r = 0; r < cfg.rows; r++)
-    for (let c = 0; c < cfg.cols; c++)
-      if (!revealed[r][c] && !flagged[r][c] && grid[r][c] !== -1)
-        candidates.push([r, c]);
-  if (candidates.length > 0) {
-    const pick = candidates[Math.floor(Math.random() * Math.min(5, candidates.length))];
-    highlightCells([pick], 'hint');
-  }
+  const safe=solverSafe();
+  if (safe.length>0) { highlight([safe[0]]); return; }
+  const cand=[];
+  for (let r=0;r<cfg.rows;r++) for (let c=0;c<cfg.cols;c++)
+    if (!revealed[r][c]&&!flagged[r][c]&&grid[r][c]!==-1) cand.push([r,c]);
+  if (cand.length) highlight([cand[Math.floor(Math.random()*Math.min(5,cand.length))]]);
 }
 
-function findSafeBySolver() {
-  // Simple constraint solver: for each pair of revealed cells, find subset constraints
-  const safe = [];
-  const constraints = [];
-
-  for (let r = 0; r < cfg.rows; r++)
-    for (let c = 0; c < cfg.cols; c++) {
-      if (!revealed[r][c] || grid[r][c] <= 0) continue;
-      const neighbors = getNeighbors(r, c);
-      const flags = neighbors.filter(([nr,nc]) => flagged[nr][nc]).length;
-      const hidden = neighbors.filter(([nr,nc]) => !revealed[nr][nc] && !flagged[nr][nc]);
-      if (hidden.length > 0)
-        constraints.push({ cells: hidden.map(([r,c]) => r*cfg.cols+c), mines: grid[r][c] - flags });
-    }
-
-  // If constraint A is a subset of constraint B, the difference is solvable
-  for (let i = 0; i < constraints.length; i++) {
-    for (let j = 0; j < constraints.length; j++) {
-      if (i === j) continue;
-      const a = constraints[i], b = constraints[j];
-      const aSet = new Set(a.cells);
-      const bSet = new Set(b.cells);
-      if ([...aSet].every(x => bSet.has(x)) && aSet.size < bSet.size) {
-        const diff = b.cells.filter(x => !aSet.has(x));
-        const minesDiff = b.mines - a.mines;
-        if (minesDiff === 0) {
-          // diff cells are safe
-          diff.forEach(key => safe.push([Math.floor(key / cfg.cols), key % cfg.cols]));
-        }
-      }
+function solverSafe() {
+  const safe=[], cons=[];
+  for (let r=0;r<cfg.rows;r++) for (let c=0;c<cfg.cols;c++) {
+    if (!revealed[r][c]||grid[r][c]<=0) continue;
+    const nb=getNeighbors(r,c);
+    const flags=nb.filter(([nr,nc])=>flagged[nr][nc]).length;
+    const hidden=nb.filter(([nr,nc])=>!revealed[nr][nc]&&!flagged[nr][nc]);
+    if (hidden.length) cons.push({cells:hidden.map(([r,c])=>r*cfg.cols+c),mines:grid[r][c]-flags});
+  }
+  for (let i=0;i<cons.length;i++) for (let j=0;j<cons.length;j++) {
+    if (i===j) continue;
+    const a=cons[i],b=cons[j],aSet=new Set(a.cells),bSet=new Set(b.cells);
+    if ([...aSet].every(x=>bSet.has(x))&&aSet.size<bSet.size) {
+      const diff=b.cells.filter(x=>!aSet.has(x));
+      if (b.mines-a.mines===0) diff.forEach(k=>safe.push([Math.floor(k/cfg.cols),k%cfg.cols]));
     }
   }
   return safe;
 }
 
-function highlightCells(cells, cls) {
-  cells.forEach(([r, c]) => {
-    const el = document.querySelector(`[data-r="${r}"][data-c="${c}"]`);
+function highlight(cells) {
+  cells.forEach(([r,c])=>{
+    const el=document.querySelector(`[data-r="${r}"][data-c="${c}"]`);
     if (!el) return;
-    el.classList.remove(cls);
-    void el.offsetWidth;
-    el.classList.add(cls);
-    setTimeout(() => el.classList.remove(cls), 2100);
+    el.classList.remove('hint'); void el.offsetWidth; el.classList.add('hint');
+    setTimeout(()=>el.classList.remove('hint'),2100);
   });
 }
 
-function getNeighbors(r, c) {
-  const result = [];
-  for (let dr = -1; dr <= 1; dr++)
-    for (let dc = -1; dc <= 1; dc++) {
-      if (dr === 0 && dc === 0) continue;
-      const nr = r + dr, nc = c + dc;
-      if (nr >= 0 && nr < cfg.rows && nc >= 0 && nc < cfg.cols)
-        result.push([nr, nc]);
-    }
-  return result;
+function getNeighbors(r,c) {
+  const out=[];
+  for (let dr=-1;dr<=1;dr++) for (let dc=-1;dc<=1;dc++) {
+    if (dr===0&&dc===0) continue;
+    const nr=r+dr,nc=c+dc;
+    if (nr>=0&&nr<cfg.rows&&nc>=0&&nc<cfg.cols) out.push([nr,nc]);
+  }
+  return out;
 }
 
-// ===================== Render =====================
-function renderBoard(openedKeys = null) {
-  const board = document.getElementById('board');
-  board.style.gridTemplateColumns = `repeat(${cfg.cols}, 36px)`;
-
-  const openedSet = openedKeys ? new Set(openedKeys) : null;
-
-  if (!board.children.length || board.children.length !== cfg.rows * cfg.cols) {
-    board.innerHTML = '';
-    for (let r = 0; r < cfg.rows; r++) {
-      for (let c = 0; c < cfg.cols; c++) {
-        const cell = document.createElement('div');
-        cell.className = 'cell closed';
-        cell.dataset.r = r;
-        cell.dataset.c = c;
-        cell.addEventListener('click', onCellClick);
-        cell.addEventListener('contextmenu', onCellRight);
-        cell.addEventListener('auxclick', onCellMiddle);
-        board.appendChild(cell);
-      }
-    }
+// ============ Render ============
+function buildBoard() {
+  const board=document.getElementById('board');
+  board.style.gridTemplateColumns=`repeat(${cfg.cols}, ${cfg.cell}px)`;
+  board.innerHTML='';
+  for (let r=0;r<cfg.rows;r++) for (let c=0;c<cfg.cols;c++) {
+    const cell=document.createElement('div');
+    cell.className='cell closed';
+    cell.style.width=cfg.cell+'px';
+    cell.style.height=cfg.cell+'px';
+    cell.style.fontSize=Math.round(cfg.cell*0.42)+'px';
+    cell.dataset.r=r; cell.dataset.c=c;
+    attachCellEvents(cell);
+    board.appendChild(cell);
   }
-
-  let idx = 0;
-  for (let r = 0; r < cfg.rows; r++) {
-    for (let c = 0; c < cfg.cols; c++) {
-      const cell = board.children[idx++];
-      cell.className = 'cell';
-      cell.textContent = '';
-
-      if (revealed[r][c]) {
-        if (grid[r][c] === -1) {
-          cell.className += gameState === 'lost' && !cell.dataset.hit
-            ? ' mine-revealed'
-            : ' mine-hit';
-          cell.textContent = '💣';
-        } else {
-          cell.className += ' open';
-          if (openedSet && openedSet.has(r * cfg.cols + c)) {
-            cell.classList.add('opening');
-          }
-          if (grid[r][c] > 0) {
-            cell.textContent = grid[r][c];
-            cell.classList.add(`n${grid[r][c]}`);
-          }
-        }
-      } else if (flagged[r][c]) {
-        cell.className += ' flagged';
-        cell.textContent = '🚩';
-      } else {
-        cell.className += ' closed';
-      }
-    }
-  }
-
-  // Update mine counter
-  let flagCount = 0;
-  for (let r = 0; r < cfg.rows; r++)
-    for (let c = 0; c < cfg.cols; c++)
-      if (flagged[r][c]) flagCount++;
-  document.getElementById('mine-count').textContent = cfg.mines - flagCount;
 }
 
-// ===================== Event Handlers =====================
-function onCellClick(e) {
-  if (gameState === 'won' || gameState === 'lost') return;
-  const r = +e.currentTarget.dataset.r;
-  const c = +e.currentTarget.dataset.c;
-
-  if (flagMode) {
-    toggleFlagCell(r, c);
-  } else {
+function renderBoard(openedKeys=null) {
+  const board=document.getElementById('board');
+  const openedSet=openedKeys?new Set(openedKeys):null;
+  const t=THEMES[settings.theme];
+  let idx=0;
+  for (let r=0;r<cfg.rows;r++) for (let c=0;c<cfg.cols;c++) {
+    const cell=board.children[idx++];
+    cell.className='cell';
+    cell.textContent='';
+    cell.style.fontSize=Math.round(cfg.cell*0.42)+'px';
     if (revealed[r][c]) {
-      chordReveal(r, c);
+      if (grid[r][c]===-1) {
+        cell.className+=cell.dataset.hit?' mine-hit':' mine-revealed';
+        cell.textContent=t.danger;
+        cell.style.fontSize=Math.round(cfg.cell*0.5)+'px';
+      } else {
+        cell.className+=' open';
+        if (openedSet&&openedSet.has(r*cfg.cols+c)) cell.classList.add('opening');
+        if (grid[r][c]>0) { cell.textContent=grid[r][c]; cell.classList.add('n'+grid[r][c]); }
+      }
+    } else if (flagged[r][c]) {
+      cell.className+=' flagged';
+      cell.textContent=t.flag;
+      cell.style.fontSize=Math.round(cfg.cell*0.5)+'px';
     } else {
-      revealCell(r, c);
+      cell.className+=' closed';
     }
+  }
+  let fc=0;
+  for (let r=0;r<cfg.rows;r++) for (let c=0;c<cfg.cols;c++) if (flagged[r][c]) fc++;
+  document.getElementById('mine-count').textContent=cfg.mines-fc;
+}
+
+// ============ Cell Events (tap + long-press) ============
+function attachCellEvents(cell) {
+  let pressTimer=null, longPressed=false, startX=0, startY=0, moved=false;
+
+  cell.addEventListener('touchstart', e=>{
+    if (gameState==='won'||gameState==='lost'||paused) return;
+    longPressed=false; moved=false;
+    startX=e.touches[0].clientX; startY=e.touches[0].clientY;
+    pressTimer=setTimeout(()=>{
+      longPressed=true;
+      const r=+cell.dataset.r,c=+cell.dataset.c;
+      if (!revealed[r][c]) { toggleFlagCell(r,c); if (navigator.vibrate) navigator.vibrate(15); }
+    }, 450);
+  }, {passive:true});
+
+  cell.addEventListener('touchmove', e=>{
+    const dx=Math.abs(e.touches[0].clientX-startX), dy=Math.abs(e.touches[0].clientY-startY);
+    if (dx>10||dy>10) { moved=true; clearTimeout(pressTimer); }
+  }, {passive:true});
+
+  cell.addEventListener('touchend', e=>{
+    clearTimeout(pressTimer);
+    if (longPressed||moved) { e.preventDefault(); return; }
+    if (gameState==='won'||gameState==='lost'||paused) return;
+    e.preventDefault();
+    handleTap(+cell.dataset.r, +cell.dataset.c);
+  });
+
+  // Mouse fallback (desktop)
+  cell.addEventListener('click', e=>{
+    if (e.detail===0) return; // ignore synthetic
+    if ('ontouchstart' in window) return; // touch handled separately
+    if (gameState==='won'||gameState==='lost'||paused) return;
+    handleTap(+cell.dataset.r,+cell.dataset.c);
+  });
+  cell.addEventListener('contextmenu', e=>{
+    e.preventDefault();
+    if (gameState==='won'||gameState==='lost'||paused) return;
+    const r=+cell.dataset.r,c=+cell.dataset.c;
+    if (!revealed[r][c]) toggleFlagCell(r,c);
+  });
+}
+
+function handleTap(r,c) {
+  if (flagMode) {
+    if (!revealed[r][c]) toggleFlagCell(r,c);
+  } else {
+    if (revealed[r][c]) chordReveal(r,c);
+    else revealCell(r,c);
   }
 }
 
-function onCellRight(e) {
-  e.preventDefault();
-  if (gameState === 'won' || gameState === 'lost') return;
-  const r = +e.currentTarget.dataset.r;
-  const c = +e.currentTarget.dataset.c;
-  toggleFlagCell(r, c);
-}
-
-function onCellMiddle(e) {
-  if (e.button !== 1) return;
-  e.preventDefault();
-  if (gameState === 'won' || gameState === 'lost') return;
-  const r = +e.currentTarget.dataset.r;
-  const c = +e.currentTarget.dataset.c;
-  chordReveal(r, c);
-}
-
-function toggleFlagCell(r, c) {
+function toggleFlagCell(r,c) {
   if (revealed[r][c]) return;
-  flagged[r][c] = !flagged[r][c];
+  flagged[r][c]=!flagged[r][c];
   renderBoard();
 }
 
-function toggleFlag() {
-  flagMode = !flagMode;
-  updateModeUI();
+// ============ Flag Mode ============
+function toggleFlagMode() {
+  flagMode=!flagMode;
+  updateFlagBtn();
+}
+function updateFlagBtn() {
+  const btn=document.getElementById('flag-btn');
+  btn.classList.toggle('flag-active', flagMode);
+  document.getElementById('flag-label').textContent = flagMode ? 'ON' : 'フラグ';
 }
 
-function updateModeUI() {
-  const ind = document.getElementById('mode-indicator');
-  const txt = document.getElementById('mode-text');
-  if (flagMode) {
-    ind.classList.add('flag-mode');
-    txt.textContent = 'Flag mode';
-  } else {
-    ind.classList.remove('flag-mode');
-    txt.textContent = 'Open mode';
-  }
-}
-
-// ===================== Timer =====================
+// ============ Timer ============
 function startTimer() {
   clearInterval(timerInt);
-  timerInt = setInterval(() => {
+  timerInt=setInterval(()=>{
+    if (paused) return;
     elapsedSecs++;
-    const m = Math.floor(elapsedSecs / 60);
-    const s = elapsedSecs % 60;
-    document.getElementById('timer').textContent = `${m}:${String(s).padStart(2,'0')}`;
-  }, 1000);
+    const m=Math.floor(elapsedSecs/60),s=elapsedSecs%60;
+    document.getElementById('timer').textContent=`${m}:${String(s).padStart(2,'0')}`;
+  },1000);
 }
-
 function stopTimer() { clearInterval(timerInt); }
 
-// ===================== Public API =====================
-function setDifficulty(diff) {
-  document.querySelectorAll('.btn.diff-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('d-' + diff).classList.add('active');
-  init(diff);
+// ============ Settings Panel ============
+function openSettings() {
+  if (gameState==='playing') paused=true;
+  document.getElementById('settings-overlay').classList.add('show');
+  document.getElementById('settings-panel').classList.add('show');
+  document.getElementById('pause-note').style.display = (gameState==='playing')?'block':'none';
+  renderSettingsUI();
+}
+function closeSettings() {
+  document.getElementById('settings-overlay').classList.remove('show');
+  document.getElementById('settings-panel').classList.remove('show');
+  if (gameState==='playing') paused=false;
 }
 
-function newGame() { init(currentDiff); }
+function renderSettingsUI() {
+  // Themes
+  const grid=document.getElementById('theme-grid');
+  grid.innerHTML='';
+  Object.entries(THEMES).forEach(([key,t])=>{
+    const card=document.createElement('div');
+    card.className='theme-card'+(settings.theme===key?' selected':'');
+    card.innerHTML=`<div class="theme-emoji">${t.emoji}</div><div class="theme-name">${t.name}</div><div class="theme-desc">${t.desc}</div>`;
+    card.onclick=()=>{
+      settings.theme=key; saveSettings();
+      applyTheme(); renderBoard(); renderSettingsUI();
+    };
+    grid.appendChild(card);
+  });
+  // Difficulty
+  document.querySelectorAll('.diff-opt').forEach(opt=>{
+    opt.classList.toggle('selected', opt.dataset.diff===settings.diff);
+  });
+  // Timer toggle
+  document.getElementById('timer-toggle').classList.toggle('on', settings.showTimer);
+}
 
-// ===================== Keyboard =====================
-document.addEventListener('keydown', e => {
-  if (e.key === 'f' || e.key === 'F') toggleFlag();
-  if (e.key === 'h' || e.key === 'H') getHint();
-  if (e.key === 'n' || e.key === 'N') newGame();
+// ============ Wire up ============
+document.getElementById('settings-btn').onclick=openSettings;
+document.getElementById('close-settings').onclick=closeSettings;
+document.getElementById('settings-overlay').onclick=closeSettings;
+document.getElementById('flag-btn').onclick=toggleFlagMode;
+document.getElementById('hint-btn').onclick=getHint;
+document.getElementById('new-btn').onclick=()=>init();
+document.getElementById('win-btn').onclick=()=>init();
+document.getElementById('lose-btn').onclick=()=>init();
+
+document.querySelectorAll('.diff-opt').forEach(opt=>{
+  opt.onclick=()=>{
+    settings.diff=opt.dataset.diff; saveSettings();
+    renderSettingsUI();
+    closeSettings();
+    init();
+  };
 });
 
-// ===================== Boot =====================
-init('easy');
+document.getElementById('timer-toggle').onclick=()=>{
+  settings.showTimer=!settings.showTimer; saveSettings();
+  updateTimerVisibility(); renderSettingsUI();
+};
+
+document.addEventListener('keydown', e=>{
+  if (e.key==='f'||e.key==='F') toggleFlagMode();
+  if (e.key==='h'||e.key==='H') getHint();
+  if (e.key==='n'||e.key==='N') init();
+  if (e.key==='Escape') closeSettings();
+});
+
+// Prevent pinch zoom / double-tap zoom interfering
+document.addEventListener('gesturestart', e=>e.preventDefault());
+
+// ============ Boot ============
+init();
 </script>
 </body>
 </html>
